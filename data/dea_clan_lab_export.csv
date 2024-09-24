@@ -1,0 +1,35 @@
+state,county,city,address1,date
+Alabama,Winston,Haleyville,"135 County Road 3411",2019-01-08
+Alabama,Autauga,Prattville,"109 North Memorial Drive",2019-06-06
+Kansas,Sedgwick,Wichita,"1349 Summitlawn Street",2019-02-06
+Kansas,Geary,"Junction City","308 N Washington st",2019-06-15
+Maryland,Washington,Williamsport,"4 South Conocoheague",2019-03-14
+Maryland,Washington,Hagerstown,"11015 Beckley Rd.",2019-09-24
+Maine,Kennebec,Waterville,"159 College Avenue",2019-03-05
+Michigan,Cheboygan,Onaway,"5332 Barkley Rd",2019-11-04
+Michigan,Kent,"Grand Rapids","903 Nw 11th",2019-11-14
+Michigan,"St. Joseph",Colon,"224 S. Blackstone Ave.",2019-11-21
+Missouri,Greene,Springfield,"3510 West Expressway",2019-01-11
+Missouri,Jackson,"Lees Summit","28003 E Lonejack",2019-05-06
+Montana,Park,Livingston,"17 Chicken Creek Road",2019-11-04
+"North Carolina",Surry,Dobson,"837 Fisher Valley Road",2019-01-11
+"North Carolina",Wake,"Holly Springs","808 Estes Lane",2019-02-15
+"North Carolina",Wake,"Wake Forest","505 Flaherty Avenue",2019-11-02
+"North Carolina",Hertford,Como,"909 Statesville Road",2019-11-19
+"North Carolina",Beaufort,Chocowinity,"415 Carrow Road",2019-12-30
+"New Jersey",Burlington,Beverly,"103 Colonial Rd",2019-11-18
+"New York",Oneida,Utica,"405 Rutger St",2019-09-02
+"New York",Madison,Oneida,"108 North Main St",2019-09-11
+"New York",Broome,Binghamton,"189 Hawley St",2019-09-18
+"New York",Wyoming,Arcade,"392 Southveiw Drive",2019-09-18
+"New York",Oswego,Mexico,"69 Larned Lane",2019-09-26
+"New York",Jefferson,Watertown,"201 Paddock St",2019-11-02
+"New York",Jefferson,Watertown,"232 West Main St",2019-11-08
+"New York",Niagara,"Niagara Falls","471 24th St",2019-11-14
+"New York",Oneida,Boonville,"365 Fenton",2019-11-26
+Oregon,Josephine,Merlin,"1150 Pleasant Valley Road",2019-12-01
+Oregon,Washington,Beaverton,"20410 Rosa Drive SW",2019-12-31
+Pennsylvania,Armstrong,"Karns City","125 Armstrong Run",2019-09-06
+Pennsylvania,Indiana,"Homer City","Stewart Hollow Rd",2019-11-03
+Texas,Harris,Houston,"6103 W. 34th St",2019-11-21
+Texas,Harris,Houston,"8021 Linda Vista Drive",2019-12-12
