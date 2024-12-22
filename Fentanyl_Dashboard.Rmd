@@ -2,9 +2,23 @@
 title: "Fentanyl Dashboard"
 output: 
   flexdashboard::flex_dashboard:
-    theme: united
-    orientation: columns
-    vertical_layout: fill
+    theme: 
+      version: 4
+      bg: "#1E1E1E"
+      fg: "#FFFFFF"
+      primary: "#1E4F78"
+      secondary: "#86C5E9"
+      navbar-bg: "#2D2D2D"
+      base_font: 
+        google: Roboto
+      heading_font: 
+        google: Montserrat
+      code_font:
+        google:
+          family: Fira Code
+          local: false
+      orientation: columns
+      vertical_layout: fill
 runtime: shiny
 ---
 
@@ -30,18 +44,21 @@ library(httr)
 
 #REMOVE THE TOKEN
 
-# # The URLs to the raw CSV files
+token <- "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"
+# 
+# # # The URLs to the raw CSV files
 url1 <- "https://raw.githubusercontent.com/lukaslehmann-R/fentanyl/main/nationwide-drugs-fy21-fy24-jun.csv"
 url2 <- "https://raw.githubusercontent.com/lukaslehmann-R/fentanyl/main/final_df.csv"
-
-
-
-# Create GET requests with authentication
+# 
+# 
+# 
+# # Create GET requests with authentication
 response1 <- GET(url1, authenticate(token, ""))
 response2 <- GET(url2, authenticate(token, ""))
 
+#UNCOMMENT THIS
 
-# Check if the requests were successful and read the content as CSV
+# # Check if the requests were successful and read the content as CSV
 if (response1$status_code == 200) {
   seizure_data <- read_csv(content(response1, "text"))
   print("nationwide-drugs-fy21-fy24-jun.csv loaded successfully")
@@ -50,6 +67,9 @@ if (response1$status_code == 200) {
   stop("Failed to retrieve nationwide-drugs-fy21-fy24-jun.csv: ", response1$status_code)
 }
 
+
+#UNCOMMENT THIS 
+
 if (response2$status_code == 200) {
   scraped_data <- read_csv(content(response2, "text"))
   print("final_df.csv loaded successfully")
@@ -57,7 +77,9 @@ if (response2$status_code == 200) {
 } else {
   stop("Failed to retrieve final_df.csv: ", response2$status_code)
 }
+#NOT THIS
 # lab_data <- read_csv("data/dea_clan_lab_export.csv")
+
 
 # unique(seizure_data$`Drug Type`)
 
@@ -95,6 +117,7 @@ states <- c(
   "International", "Texas"
 )
 
+
 offices <- unique(fent_seiz$area_of_responsibility)
 
 # Combine into a data frame
@@ -109,9 +132,9 @@ fent_w_states <- fent_seiz %>%
   clean_names() %>%
   filter(state != "International")
 
-stategeojson <- geojson_read("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json", what = "sp")
+# stategeojson <- geojson_read("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json", what = "sp")
 
-# stategeojson <- readRDS("stategeojson.rds")
+stategeojson <- readRDS("stategeojson.rds")
 
 # saveRDS(stategeojson, file = "stategeojson.rds")
 
@@ -123,7 +146,7 @@ fent_by_state <- fent_w_states %>%
 # Merge fentanyl data with geojson data
 stategeojson@data <- left_join(stategeojson@data, fent_by_state, by = c("name" = "state"))
 
-
+custom_palette <- colorRampPalette(c("#D6E9F7", "#1E4F78"))
 ```
 
 Fentanyl Seizures
@@ -148,9 +171,14 @@ actionButton("update", "Update Map")
 Column {data-width=690}
 -----------------------------------------------------------------------
 
-### Chart A
+### Map of Fentanyl Seizures by State
 
 ```{r}
+
+format_fent <- function(x) {
+  scales::comma_format()(x)
+}
+
 
 leafletOutput("seizure_map", width = "100%", height = "600px")
 
@@ -168,59 +196,66 @@ observeEvent(input$update, {
     group_by(state) %>%
     summarise(total_lbs = sum(sum_qty_lbs, na.rm = TRUE))
   
-  # Clean state names in GeoJSON data and filtered data for consistency
-  stategeojson@data$name <- tolower(trimws(stategeojson@data$name))
-  fent_by_state_filtered$state <- tolower(trimws(fent_by_state_filtered$state))
-  
   # Remove any existing total_lbs column in stategeojson@data to avoid conflicts during the join
   stategeojson@data$total_lbs <- NULL
   
   # Merge filtered fentanyl data with geojson data
   stategeojson@data <- left_join(stategeojson@data, fent_by_state_filtered, by = c("name" = "state"))
-
+  
   # Replace NA values in total_lbs with 0 for states with no data
   stategeojson@data$total_lbs[is.na(stategeojson@data$total_lbs)] <- 0
-
-  # Apply a logarithmic transformation to total_lbs for better visualization
-  stategeojson@data$log_total_lbs <- log10(stategeojson@data$total_lbs + 1)
-
-  # Define bins based on the actual seizure values
-  bins <- c(0, 1, 10, 100, 1000, 5000, max(stategeojson@data$total_lbs, na.rm = TRUE))
   
-  # Set up a color palette based on the log-transformed values
-  pal <- colorBin(palette = "YlOrRd", domain = stategeojson@data$total_lbs, bins = bins, na.color = "transparent")
+  # Determine the range of spending values
+  seizure_range <- range(stategeojson@data$total_lbs)
+  
+  # Create a log-scaled color palette based on the current data range
+  log_domain <- log1p(seizure_range)
+  pal <- colorNumeric(custom_palette(10), domain = log_domain)
+  
+  max_seizure <- max(seizure_range[2], 1)
+  log_max <- log10(max_seizure)
+  num_breaks <- min(ceiling(log_max) + 1, 7)
+  legend_breaks <- 10^seq(0, log_max, length.out = num_breaks)
+  legend_breaks <- unique(floor(legend_breaks))
+  legend_labels <- format_fent(legend_breaks)
   
   leafletProxy("seizure_map", data = stategeojson) %>%
-  clearShapes() %>%
-  clearControls() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolygons(
-    fillColor = ~pal(total_lbs),  # Color based on the log-transformed values
-    color = "#BDBDC3",
-    weight = 1,
-    fillOpacity = 0.7,
-    # Use format() to add commas to the rounded total_lbs values
-    label = ~paste0(name, ": ", format(round(total_lbs), big.mark = ","), " lbs"),
-    layerId = ~name,
-    highlightOptions = highlightOptions(weight = 2, color = "#666", fillOpacity = 0.7, bringToFront = TRUE)) %>%
-  addLegend(pal = pal, values = ~total_lbs, bins = bins, opacity = 0.7,
-            title = "Total Fentanyl Seizures (lbs)", position = "bottomright")
-
-
+    clearShapes() %>%
+    clearControls() %>%
+    addPolygons(
+      fillColor = ~pal(log1p(total_lbs)),  # Color based on the log-transformed values
+      fillOpacity = 0.7,
+      color = "#4A4A4A",
+      weight = 1,
+      smoothFactor = 0.2,
+      layerId = ~name,
+      popup = ~paste(name, "<br>", "Total Fentanyl Seizure: ", 
+                     format(round(total_lbs), big.mark = ","), " lbs")
+    ) %>%
+    addLegend(
+      colors = pal(log1p(legend_breaks)),
+      labels = legend_labels,
+      title = "Total Seizure",
+      opacity = 0.9,
+      position = "bottomright"
+    ) %>%
+    setView(lng = -96, lat = 37.8, zoom = 3.5)
+  
 })
 
 output$seizure_map <- renderLeaflet({
   leaflet(stategeojson) %>%
-    addProviderTiles("CartoDB.Positron") %>%
+    addProviderTiles("CartoDB.DarkMatter") %>%
     setView(lng = -96, lat = 37.8, zoom = 3.5) # Adjusted zoom level
 })
+
 
 ```
 
 Column {data-width=600}
 -----------------------------------------------------------------------
 
-### Chart B
+### Fentanyl Seizures by Office Over Time
 
 ```{r}
 
@@ -233,6 +268,57 @@ observeEvent(input$seizure_map_shape_click, {
   selected_state(clicked_state)
 })
 
+# output$a <- renderPlotly({
+#   req(selected_state())
+#   req(input$update)
+#   
+#   state_name <- selected_state()
+#   
+#   start_date <- as.Date(paste(input$start_year, match(input$start_month, month.abb), "1", sep = "-"))
+#   end_date <- as.Date(paste(input$end_year, match(input$end_month, month.abb), "1", sep = "-"))
+#   
+#   # fent_w_states <- fent_w_states %>%
+#   #   mutate(state = tolower(state))
+#   
+#   # Filter the data based on the selected date range and state
+#   filtered_data1 <- fent_w_states %>%
+#     filter(date >= start_date & date <= end_date & state == state_name) %>%
+#     group_by(area_of_responsibility, date) %>%
+#     summarise(total_seizure = sum(sum_qty_lbs, na.rm = TRUE)) %>%
+#     ungroup()
+#   
+#   
+#   # Check if filtered data is empty
+#   if(nrow(filtered_data1) == 0) {
+#     showNotification("No data available for the selected state and date range.", type = "warning")
+#     return(NULL)
+#   }
+#   
+#   gg1 <- ggplot(filtered_data1, aes(x = date, y = round(total_seizure, 0), color = area_of_responsibility, 
+#                                     group = area_of_responsibility, text = paste("Date: ", date, "<br>Total Fentanyl Seizure (lbs): ", total_seizure))) +
+#     geom_line() +
+#     geom_point() +
+#     labs(title = paste("Fentanyl Seizure by Office in", str_to_title(state_name)),
+#          x = "Date",
+#          y = "Total Seizure",
+#          color = "Office") +
+#     theme_minimal()  +
+#     theme(
+#       plot.background = element_rect(fill = "#2D2D2D", color = NA),
+#       panel.background = element_rect(fill = "#2D2D2D", color = NA),
+#       text = element_text(color = "#FFFFFF"),
+#       axis.text = element_text(color = "#FFFFFF"),
+#       axis.title = element_text(color = "#FFFFFF"),
+#       legend.background = element_rect(fill = "#2D2D2D", color = NA),
+#       legend.text = element_text(color = "#FFFFFF"),
+#       legend.title = element_text(color = "#FFFFFF"),
+#       panel.grid.major = element_line(color = "#4A4A4A", size = 0.2),
+#       panel.grid.minor = element_blank()
+#     )
+#   
+#   ggplotly(gg1, tooltip = "text")
+# })
+
 output$a <- renderPlotly({
   req(selected_state())
   req(input$update)
@@ -242,9 +328,6 @@ output$a <- renderPlotly({
   start_date <- as.Date(paste(input$start_year, match(input$start_month, month.abb), "1", sep = "-"))
   end_date <- as.Date(paste(input$end_year, match(input$end_month, month.abb), "1", sep = "-"))
   
-  fent_w_states <- fent_w_states %>%
-    mutate(state = tolower(state))
-  
   # Filter the data based on the selected date range and state
   filtered_data1 <- fent_w_states %>%
     filter(date >= start_date & date <= end_date & state == state_name) %>%
@@ -252,32 +335,49 @@ output$a <- renderPlotly({
     summarise(total_seizure = sum(sum_qty_lbs, na.rm = TRUE)) %>%
     ungroup()
   
-  
   # Check if filtered data is empty
   if(nrow(filtered_data1) == 0) {
     showNotification("No data available for the selected state and date range.", type = "warning")
     return(NULL)
   }
   
-  gg1 <- ggplot(filtered_data1, aes(x = date, y = round(total_seizure, 0), color = area_of_responsibility, 
-                                    group = area_of_responsibility, text = paste("Date: ", date, "<br>Total Fentanyl Seizure (lbs): ", total_seizure))) +
+  # Round total_seizure to 2 decimal places for plotting
+  filtered_data1 <- filtered_data1 %>%
+    mutate(total_seizure = round(total_seizure, 2))
+  
+  gg1 <- ggplot(filtered_data1, aes(x = date, y = total_seizure, color = area_of_responsibility, 
+                                    group = area_of_responsibility, 
+                                    text = paste("Date: ", date, "<br>Total Fentanyl Seizure (lbs): ", total_seizure))) +
     geom_line() +
     geom_point() +
     labs(title = paste("Fentanyl Seizure by Office in", str_to_title(state_name)),
          x = "Date",
          y = "Total Seizure",
          color = "Office") +
-    theme_minimal()
+    theme_minimal()  +
+    theme(
+      plot.background = element_rect(fill = "#2D2D2D", color = NA),
+      panel.background = element_rect(fill = "#2D2D2D", color = NA),
+      text = element_text(color = "#FFFFFF"),
+      axis.text = element_text(color = "#FFFFFF"),
+      axis.title = element_text(color = "#FFFFFF"),
+      legend.background = element_rect(fill = "#2D2D2D", color = NA),
+      legend.text = element_text(color = "#FFFFFF"),
+      legend.title = element_text(color = "#FFFFFF"),
+      panel.grid.major = element_line(color = "#4A4A4A", size = 0.2),
+      panel.grid.minor = element_blank()
+    )
   
   ggplotly(gg1, tooltip = "text")
 })
+
 
 # Output the plotly chart
 plotlyOutput("a", width = "80%", height = "310px")
 
 ```
 
-### Chart C
+### Total Seizure by Office
 
 ```{r}
 
@@ -331,7 +431,19 @@ output$b <- renderPlotly({
          x = "Authority",
          y = "Total Seizure",
          fill = "Office") +  # Changed 'color' to 'fill'
-    theme_minimal()
+    theme_minimal()  +
+    theme(
+      plot.background = element_rect(fill = "#2D2D2D", color = NA),
+      panel.background = element_rect(fill = "#2D2D2D", color = NA),
+      text = element_text(color = "#FFFFFF"),
+      axis.text = element_text(color = "#FFFFFF"),
+      axis.title = element_text(color = "#FFFFFF"),
+      legend.background = element_rect(fill = "#2D2D2D", color = NA),
+      legend.text = element_text(color = "#FFFFFF"),
+      legend.title = element_text(color = "#FFFFFF"),
+      panel.grid.major = element_line(color = "#4A4A4A", size = 0.2),
+      panel.grid.minor = element_blank()
+    )
   
   # Render the chart with tooltips
   ggplotly(gg2, tooltip = "text")
@@ -356,21 +468,6 @@ Column {data-height=100}
 
 scraped_data <- scraped_data %>%
   arrange(city_name)
-
-# # Clean address_info in the dataframe
-# scraped_data <- scraped_data %>%
-#   mutate(address_info = gsub("([A-Za-z0-9]+)([A-Z][a-z]+,)", "\\1\n\\2", address_info))  # Adding a newline before city and state
-# 
-# scraped_data <- scraped_data %>%
-#   mutate(address_info = gsub("- -", "", address_info))
-# 
-# # Clean address_info in the dataframe
-# scraped_data <- scraped_data %>%
-#   mutate(address_info = gsub("Suite", "\nSuite", address_info))  # Add a newline before "Suite"
-# 
-# # Another option is to add a space before United States
-# scraped_data <- scraped_data %>%
-#   mutate(address_info = gsub("United States", "\nUnited States", address_info))  # Add a newline before "United States"
 
 # City selection input
 selectInput("selected_city", "", choices = unique(scraped_data$city_name), selected = NULL)
@@ -411,15 +508,12 @@ About - READ ME
 ============================================================================
 
 Hello C4ADS! I made this dashboard to quickly demonstrate a few of my R programming skills. Please explore this dashboard constructed from publicly available sources. I've chosen this topic because counternarcotics research is featured on your website.
-
 <br>
 
 This is a relatively simple dashboard, but increasing levels of complexity could be added depending on what is needed by the user. The general idea behind this dashboard is that (if the data is regularly updated) it could be used by someone interested in tracking trends in fentanyl seizures as a launching point for more in-depth investigation. 
-
 <br>
 
 The first tab provides a map of fentanyl seizures around the country. The scale on the map is a log scale so that the differences between state seizure numbers can be seen more easily. The second tab provides the contact information for the authorities seizing the fentanyl to make asking CBP questions related to these seizures easier. There were no email addresses available. 
-
 <br>
 
 The fentanyl seizure data comes from U.S. Customs and Border Protection. I scraped the contact info from their site using R.

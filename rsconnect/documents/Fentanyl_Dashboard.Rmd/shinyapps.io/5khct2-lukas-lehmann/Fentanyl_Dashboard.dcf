@@ -1,0 +1,12 @@
+name: Fentanyl_Dashboard
+title: Fentanyl_Dashboard
+username: 5khct2-lukas-lehmann
+account: 5khct2-lukas-lehmann
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13633557
+bundleId: 9557758
+url: https://5khct2-lukas-lehmann.shinyapps.io/Fentanyl_Dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
