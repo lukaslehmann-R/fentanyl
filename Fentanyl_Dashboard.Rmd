@@ -44,7 +44,6 @@ library(httr)
 
 #REMOVE THE TOKEN
 
-token <- "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"
 # 
 # # # The URLs to the raw CSV files
 url1 <- "https://raw.githubusercontent.com/lukaslehmann-R/fentanyl/main/nationwide-drugs-fy21-fy24-jun.csv"
