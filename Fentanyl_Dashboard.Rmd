@@ -50,7 +50,6 @@ url1 <- "https://raw.githubusercontent.com/lukaslehmann-R/fentanyl/main/nationwi
 url2 <- "https://raw.githubusercontent.com/lukaslehmann-R/fentanyl/main/final_df.csv"
 # 
 # 
-# 
 # # Create GET requests with authentication
 response1 <- GET(url1, authenticate(token, ""))
 response2 <- GET(url2, authenticate(token, ""))
@@ -506,7 +505,7 @@ observeEvent(input$go_button, {
 About - READ ME
 ============================================================================
 
-Hello C4ADS! I made this dashboard to quickly demonstrate a few of my R programming skills. Please explore this dashboard constructed from publicly available sources. I've chosen this topic because counternarcotics research is featured on your website.
+Hello! I made this dashboard to quickly demonstrate a few of my R programming skills. Please explore this dashboard constructed from publicly available sources. I've chosen this topic because counternarcotics research is featured on your website.
 <br>
 
 This is a relatively simple dashboard, but increasing levels of complexity could be added depending on what is needed by the user. The general idea behind this dashboard is that (if the data is regularly updated) it could be used by someone interested in tracking trends in fentanyl seizures as a launching point for more in-depth investigation. 
